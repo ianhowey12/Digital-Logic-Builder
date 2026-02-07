@@ -1,0 +1,37 @@
+body{
+    overflow: hidden;
+}
+
+#canvas{
+    position: absolute;
+    border: 5px solid black;
+    background: white;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+#fileLoad {
+    position: fixed;
+    bottom: 10px;
+    left: 10px;
+}
+
+#message {
+    position: fixed;
+    bottom: 10px;
+    left: 200px;
+}
+
+#fileSave {
+    position: fixed;
+    bottom: 10px;
+    left: 400px;
+}
+
+#colorInput {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+}
