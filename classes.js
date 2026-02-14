@@ -25,28 +25,27 @@ execute():
         Calculate this node's new value based on whether there is at least 1 powered input and whether this node is inverting.
         If this node changed, add it to the queue.
 
-When rendering input/output nodes and wires, there will be pointers from each node to an active object that stores its value.
-0 = off, non-zero = on.
-
-
-
-
-The actives DON'T even need to be objects.
-The actives will be stored in parallel arrays!
-
 */
 
-/*
-active's x-coordinate
-active's y-coordinate
-boolean, whether this active's value is the inverse of its parents' values
-boolean, whether this active is on or off
-number[], the active indices that power this active
-number[], the active indices that this active powers
-boolean, hether this active is in the execution queue
-*/
 class N {
+
+    x = 0
+    y = 0
+    inverting = false
+    value = false
+    parents = []
+    children = []
+    inq = false
     
+    /**
+     * @param {Number} x
+     * @param {Number} y
+     * @param {Boolean} inverting
+     * @param {Boolean} value
+     * @param {N[]} parents
+     * @param {N[]} children
+     * @param {Boolean} inq
+    */
     constructor(x, y, inverting, value, parents, children, inq){
         this.x = x;
         this.y = y;
@@ -73,7 +72,7 @@ function setupHashTable(){
     hashTableNumElements = 0;
 }
 
-// Rehash. This must be called when putting if the hash table is full.
+// Rehash. This must be called when putting if the hash table is full enough.
 function resizeHashTable(newSize){
     let n = []
     for(let i = 0; i < hashTable.length; i++){
@@ -99,7 +98,11 @@ function resizeHashTable(newSize){
 
 function hash(x, y){
     // 37 * 73 * 101 * 103 and 59 * 71 * 79 * 109
-    return (28098503 * x + 36071479 * y) % hashTable.length
+    let o = (28098503 * x + 36071479 * y) % hashTable.length
+    if(o < 0){
+        o -= -1 * hashTable.length;
+    }
+    return o;
 }
 
 // Put the active node at the given index to the hash table using its coordinates.
@@ -145,7 +148,7 @@ function getHash(x, y){
 
 // Removes the node at (x, y) if present. Return the node or null.
 function removeHash(x, y){
-    
+
     let b = hash(x, y)
     let s = hashTable[b].length
 
@@ -183,7 +186,7 @@ function deleteNode(x, y){
         // For each child of this node, remove this node from its parents array.
         let children = n.children
         let nc = children.length
-        for(let i = 0; i < nc; i++){ // BUG: CHILDREN IS UNDEFINED HERE
+        for(let i = 0; i < nc; i++){
             let pl = children[i].parents.length
             for(let j = 0; j < pl; j++){
                 if(children[i].parents[j].x == x && children[i].parents[j].y == y){
@@ -332,4 +335,50 @@ function execute(timeLimitMS){
     }
 
     finishedExecution = true;
+}
+
+
+// A collection of nodes representing a component on the list.
+class L {
+    text = "";
+    w = 0;
+    h = 0;
+    nodes = [];
+    
+    /**
+     * @param {Number} w
+     * @param {Number} h
+     */
+    constructor(w, h){
+        this.w = w;
+        this.h = h;
+    }
+
+    /**
+     * @param {N} n
+     */
+    addNode(node){
+        this.nodes.push(node);
+    }
+}
+
+// All components currently on the list.
+let list = []
+
+
+
+function screenToSpaceX(screenX){
+    return (screenX / zoom) + cornerX;
+}
+
+function screenToSpaceY(screenY){
+    return (screenY / zoom) + cornerY;
+}
+
+function spaceToScreenX(spaceX){
+    return (spaceX - cornerX) * zoom;
+}
+
+function spaceToScreenY(spaceY){
+    return (spaceY - cornerY) * zoom;
 }

@@ -2,12 +2,15 @@
 
 
 let keybindDescriptions = [
+    "Toggle these keybinds: SPACE",
     "Clear all: hold R",
     "Drag screen: left mouse",
     "Toggle execution: E",
     "Select: right click",
     "Paste selected: P",
     "Delete selected: BACK",
+    "Rotate listed object counterclockwise: R",
+    "Rotate listed object clockwise: T",
     "Create a non-inverting node: N",
     "Create an inverting node: M",
     "Delete a node: BACK",
@@ -21,7 +24,7 @@ let currKey = Array(256);
 let prevKey = Array(256);
 
 const KEYBIND_FONT_SIZE = 15;
-const KEYBIND_FONT_COLOR = "#500000";
+const KEYBIND_FONT_COLOR = "#ffff00ff";
 
 // Used only for typing into text boxes. One-key controls will be written into the code as strings.
 let keyCodes = [
@@ -33,7 +36,7 @@ let keyCodes = [
     " ", ",", ".", "?", "-", "+", "=", "_",
     "/", "\\", "\'", "\"", "(", ")", "{", "}", "[", "]", "<", ">",
     "!", "@", "#", "$", "%", "^", "&", "*", "|", "`", "~",
-    "Backspace", "Enter", "Tab"
+    "Backspace", "Enter", "Tab", " "
 ]
 
 function handleMousedown(event){ // mouseEvent
@@ -110,30 +113,18 @@ function handleWheel(event){
     changeZoom(0.999 ** event.deltaY)
 }
 
-const fileLoad = document.getElementById("fileLoad"); // as HTMLElement
-const messageDisplay = document.getElementById("message") // as HTMLElement
-
-fileLoad.addEventListener("change", handleFileSelection);
-
-// both are any
-function showFileMessage(message, type) {
-    messageDisplay.textContent = message;
-    messageDisplay.style.color = type === "error" ? "red" : "green";
-}
-
 // event is any
-function handleFileSelection(event) {
+function selectFile(event){
     const file = event.target.files[0];
-    messageDisplay.textContent = ""; // Clear previous message
 
     // Validate file existence and type
     if (!file) {
-        showFileMessage("No file selected. Please choose a file.", "error");
+        console.log("No file selected. Please choose a file.");
         return;
     }
 
     if (!file.type.startsWith("text")) {
-        showFileMessage("Unsupported file type. Please select a text file.", "error");
+        console.log("Unsupported file type. Please select a text file.");
         return;
     }
 
@@ -147,12 +138,15 @@ function handleFileSelection(event) {
         decodeAllData();
     };
     reader.onerror = () => {
-        showFileMessage("Error reading the file. Please try again.", "error");
+        // Unused
     };
     //reader.readAsText(file);      DOES THIS GIVE A STRING????
 }
 
-function handleFileSave(){
+const fileLoad = document.getElementById("fileLoad"); // as HTMLElement
+fileLoad.addEventListener("change", selectFile);
+
+function doFileSave(){
     
     encodeAllData();
 

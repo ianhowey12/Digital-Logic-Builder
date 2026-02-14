@@ -1,27 +1,20 @@
 function drawKeybinds(){
+    let x0 = 0;
+    let y0 = colorPickerH + KEYBIND_FONT_SIZE;
 
-    let x0 = 120;
-    let x1 = x0 + KEYBIND_FONT_SIZE * 15;
-    let x2 = x1 + KEYBIND_FONT_SIZE * 15;
-    let y0 = KEYBIND_FONT_SIZE;
-    
-    text("KEYBINDS", x0, y0, KEYBIND_FONT_COLOR, KEYBIND_FONT_SIZE);
+    if(showingKeybinds){
+        
+        text("KEYBINDS", x0, y0, KEYBIND_FONT_COLOR, KEYBIND_FONT_SIZE);
 
-    for(let i=0;i<6;i++){
-        text(keybindDescriptions[i], x0, y0 + KEYBIND_FONT_SIZE * (i + 1), KEYBIND_FONT_COLOR, KEYBIND_FONT_SIZE);
+        for(let i = 0; i < keybindDescriptions.length; i++){
+            text(keybindDescriptions[i], x0, y0 + KEYBIND_FONT_SIZE * (i + 1), KEYBIND_FONT_COLOR, KEYBIND_FONT_SIZE);
+        }
+    }else{
+        text("SPACE to show keybinds", x0, y0, KEYBIND_FONT_COLOR, KEYBIND_FONT_SIZE);
     }
     
-    text("NODE CONTROL", x1, y0, KEYBIND_FONT_COLOR, KEYBIND_FONT_SIZE);
-
-    for(let i=0;i<3;i++){
-        text(keybindDescriptions[6 + i], x1, y0 + KEYBIND_FONT_SIZE * (i + 1), KEYBIND_FONT_COLOR, KEYBIND_FONT_SIZE);
-    }
-    
-    text("ZOOM: " + Math.floor(zoom * 10000.0) / 10000.0, x2, y0, KEYBIND_FONT_COLOR, KEYBIND_FONT_SIZE);
-
-    for(let i=0;i<3;i++){
-        text(keybindDescriptions[9 + i], x2, y0 + KEYBIND_FONT_SIZE * (i + 1), KEYBIND_FONT_COLOR, KEYBIND_FONT_SIZE);
-    }
+    x0 = 300;
+    text(hashTableNumElements.toString() + " nodes, " + list.length + " listed objects.", colorPickerW + 10, KEYBIND_FONT_SIZE, KEYBIND_FONT_COLOR, KEYBIND_FONT_SIZE);
 }
 
 function drawWire(xStart, yStart, xEnd, yEnd, isOn){
@@ -39,71 +32,76 @@ function drawNewWire(xStart, yStart, xEnd, yEnd){
 
 function drawNewWires(){
 
-    // Draw new wires using drawNewWire().
+    // Draw wires being placed using drawNewWire().
     if(dWireFromNode != null){
         let x = Math.round(spaceToScreenX(dWireFromNode.x));
         let y = Math.round(spaceToScreenY(dWireFromNode.y));
         drawNewWire(x, y, mouseX, mouseY)
     }
+}
 
+function drawNodeWires(n, offsetX, offsetY){
+    // Convert the coordinates of the node to coordinates on screen.
+    let x = Math.round(spaceToScreenX(n.x + offsetX));
+    let y = Math.round(spaceToScreenY(n.y + offsetY));
+        
+    // If the node is on screen, draw its wires to and from other nodes.
+    if(x >= 0 && x < canvas.width && y >= 0 && y <= canvas.height){
+
+        // Draw already-placed wires from and to the node using drawWire().
+        let children = n.children;
+        for(let j = 0; j < children.length; j++){
+            let child = children[j];
+            let cx = Math.round(spaceToScreenX(child.x + offsetX));
+            let cy = Math.round(spaceToScreenY(child.y + offsetY));
+
+            drawWire(x, y, cx, cy, n.value)
+        }
+        let parents = n.parents;
+        for(let j = 0; j < parents.length; j++){
+            let parent = parents[j];
+            let px = Math.round(spaceToScreenX(parent.x + offsetX));
+            let py = Math.round(spaceToScreenY(parent.y + offsetY));
+                
+            // If the parent is on screen, we already drew a wire from parent to child, so continue.
+            if(px >= 0 && px < canvas.width && py >= 0 && py <= canvas.height) continue;
+
+            drawWire(px, py, x, y, parent.value)
+        }
+    }
+}
+
+function drawNode(n, offsetX, offsetY){
+    // Convert the coordinates of the node to coordinates on screen.
+    let x = Math.round(spaceToScreenX(n.x + offsetX));
+    let y = Math.round(spaceToScreenY(n.y + offsetY));
+        
+    // Determine if at least one pixel of the node is on screen.
+    let xl = spaceToScreenX(n.x + offsetX + 0.5);
+    let xr = spaceToScreenX(n.x + offsetX - 0.5);
+    let yl = spaceToScreenY(n.y + offsetY + 0.5);
+    let yr = spaceToScreenY(n.y + offsetY - 0.5);
+    if(xl >= 0 && xr <= canvas.width && yl >= 0 && yr <= canvas.height){
+
+        // Draw the node at the point on screen.
+        if(n.inverting){
+            rect(xl, yl, xr - xl, yr - yl, INVERTING_NODE_COLOR)
+        }else{
+            rect(xl, yl, xr - xl, yr - yl, UNINVERTING_NODE_COLOR)
+        }
+    }
 }
 
 function drawNodesAndWires(){
 
     // Iterate through all nodes.
     for(let i = 0; i < nodes.length; i++){
-        // Convert the coordinates of the node to coordinates on screen.
-        let x = Math.round(spaceToScreenX(nodes[i].x));
-        let y = Math.round(spaceToScreenY(nodes[i].y));
-        
-        // If the node is on screen, draw its wires to and from other nodes.
-        if(x >= 0 && x < canvas.width && y >= 0 && y <= canvas.height){
-
-            // Draw already-placed wires from and to the node using drawWire().
-            let children = nodes[i].children;
-            for(let j = 0; j < children.length; j++){
-                let child = children[j];
-                let nx = Math.round(spaceToScreenX(child.x));
-                let ny = Math.round(spaceToScreenY(child.y));
-
-                drawWire(x, y, nx, ny, nodes[i].value)
-            }
-            let parents = nodes[i].parents;
-            for(let j = 0; j < parents.length; j++){
-                let parent = parents[j];
-                let nx = Math.round(spaceToScreenX(parent.x));
-                let ny = Math.round(spaceToScreenY(parent.y));
-                
-                // If the parent is on screen, we already drew a wire from parent to child, so continue.
-                if(nx >= 0 && nx < canvas.width && ny >= 0 && ny <= canvas.height) continue;
-
-                drawWire(nx, ny, x, y, parent.value)
-            }
-        }
+        drawNodeWires(nodes[i], 0, 0);
     }
 
     // Iterate through all nodes.
     for(let i = 0; i < nodes.length; i++){
-        // Convert the coordinates of the node to coordinates on screen.
-        let x = Math.round(spaceToScreenX(nodes[i].x));
-        let y = Math.round(spaceToScreenY(nodes[i].y));
-        
-        // Determine if at least one pixel of the node is on screen.
-        let xl = spaceToScreenX(nodes[i].x + 0.5);
-        let xr = spaceToScreenX(nodes[i].x - 0.5);
-        let yl = spaceToScreenY(nodes[i].y + 0.5);
-        let yr = spaceToScreenY(nodes[i].y - 0.5);
-        if(xl < 0) continue;
-        if(xr > canvas.width) continue;
-        if(yl < 0) continue;
-        if(yr > canvas.height) continue;
-
-        // Draw the node at the point on screen.
-        if(nodes[i].inverting){
-            rect(xl, yl, xr - xl, yr - yl, INVERTING_NODE_COLOR)
-        }else{
-            rect(xl, yl, xr - xl, yr - yl, UNINVERTING_NODE_COLOR)
-        }
+        drawNode(nodes[i], 0, 0);
     }
 }
 
@@ -151,37 +149,70 @@ function drawColorPicker(){
 }
 
 function drawSelection(){
-    let sx0, sy0, sx1, sy1;
-    if(selectingAreaX0 < selectingAreaX1){
-        sx0 = selectingAreaX0;
-        sx1 = selectingAreaX1;
-    }else{
-        sx0 = selectingAreaX1;
-        sx1 = selectingAreaX0;
-    }
-    if(selectingAreaY0 < selectingAreaY1){
-        sy0 = selectingAreaY0;
-        sy1 = selectingAreaY1;
-    }else{
-        sy0 = selectingAreaY1;
-        sy1 = selectingAreaY0;
-    }
 
     // Adjust to be halfway between the grid dots on screen.
-    sx0 -= 0.5;
-    sx1 += 0.5;
-    sy0 -= 0.5;
-    sy1 += 0.5;
-
-    let x = spaceToScreenX(sx0)
-    let y = spaceToScreenY(sy0)
-    let w = (sx1 - sx0) * zoom
-    let h = (sy1 - sy0) * zoom
+    let x = spaceToScreenX(sx0 - 0.5)
+    let y = spaceToScreenY(sy0 - 0.5)
+    let w = (sx1 + 0.5 - (sx0 - 0.5)) * zoom
+    let h = (sy1 + 0.5 - (sy0 - 0.5)) * zoom
 
     if(isSelectingArea){
         rect(x, y, w, h, SELECTING_AREA_COLOR)
-    }else{
+    }else if(selectedArea){
         rect(x, y, w, h, SELECTED_AREA_COLOR)
+    }
+}
+
+function drawHologram(){
+
+    let offsetX = Math.round(screenToSpaceX(mouseX));
+    let offsetY = Math.round(screenToSpaceY(mouseY));
+
+    if(listSelected != -1){
+        let n = list[listSelected].nodes;
+
+        for(let i = 0; i < n.length; i++){
+            drawNodeWires(n[i], offsetX, offsetY);
+        }
+
+        for(let i = 0; i < n.length; i++){
+            drawNode(n[i], offsetX, offsetY);
+        }
+    }
+}
+
+function drawList(){
+    rect(canvas.width - listWidth, 0, listWidth, canvas.height, LIST_COLOR_0)
+
+    // Draw each component on the list.
+    for(let i = 0; i < list.length; i++){
+
+        //let boxHeight = listWidth - listMargin * 2;
+        //let x = (canvas.width - listWidth) + listMargin;
+        //let boxStart = listMargin + boxHeight * i;
+
+        // // Draw a box.
+        //rect(x, boxHeight, boxStart, boxHeight)
+
+        // Draw the background.
+        let col = LIST_COLOR_1;
+        if(listSelected == i){
+            col = LIST_COLOR_2;
+        }
+        rect(canvas.width - listWidth, i * listBoxHeight, listWidth, listBoxHeight, col)
+
+        
+        // Draw the text.
+        let xm = canvas.width - (listWidth / 2)
+        let ym = i * listBoxHeight + (listBoxHeight / 2)
+        text(list[i].text, xm, ym, LIST_TEXT_COLOR, "center");
+        
+    }
+
+    for(let i = 0; i < list.length; i++){
+        // Draw the line.
+        let y = (i + 1) * listBoxHeight
+        rect(canvas.width - listWidth, y, listWidth, 1, LIST_LINE_COLOR)
     }
 }
 
@@ -219,6 +250,8 @@ function draw(){
     drawKeybinds();
     drawColorPicker();
     drawSelection();
+    drawHologram();
+    drawList();
 
     frame++;
     window.requestAnimationFrame(draw);
